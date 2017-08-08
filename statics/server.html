@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+  <head>
+    <title>C'est DéDé</title>
+    <link rel="stylesheet" href="/statics/css/xterm.css" />
+    <link rel="stylesheet" href="/statics/css/fullscreen.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js" integrity="sha256-tSRROoGfGWTveRpDHFiWVz+UXt+xKNe90wwGn25lpw8=" crossorigin="anonymous"></script>
+
+    <script src="/statics/js/xterm.js"></script>
+    <script src="/statics/js/fit.js"></script>
+    <script src="/statics/js/attach.js"></script>
+    <script src="/statics/js/fullscreen.js"></script>
+
+    <style>
+    #dede-terminal {
+        width: 1200px;
+        height: 600px;
+        margin: 5px 5px;
+        padding: 2px;
+    }
+    </style>
+  </head>
+  <body>
+    <div id="dede-terminal"></div>
+    <script>
+      var container = document.getElementById('dede-terminal');
+    	var term = term = new Terminal({
+            geometry: [200, 40],
+            debug: true
+        });
+      term.open(container);
+      term.fit();
+
+      var websocket;
+      function wsConnect() {
+        websocket = new WebSocket("ws://" + location.host + "/terminal/");
+        websocket.onopen = function(evt) {
+          term.attach(websocket);
+        };
+        websocket.onclose = wsDisconnected;
+        websocket.onerror = wsOnError;
+      }
+      wsConnect();
+
+      function wsOnError() {
+        $.notify("Writing error", "error");
+      }
+
+      function wsDisconnected(evt) {
+        $.notify("Connection error", "error");
+
+        setTimeout(wsConnect, 5000);
+      }
+    </script>
+  </body>
+</html>

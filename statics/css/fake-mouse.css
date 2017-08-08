@@ -1,0 +1,11 @@
+#dede-fake-mouse-pointer {
+  position: absolute;
+  z-index: 9999999;
+  width: 19px;
+  height: 32px;
+  background-image: url(/statics/img/mouse-pointer.png);
+}
+
+#dede-fake-mouse-pointer.mouse-down {
+  background-image: url(/statics/img/mouse-pointer-down.png);
+}

@@ -1,0 +1,73 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "+kuKkA6MyrIoiUBeyPoyZZlN3O8=",
+			"path": "github.com/gobwas/httphead",
+			"revision": "d8ef83dd38eff6fae44a0397340fd8a42ffd6664",
+			"revisionTime": "2017-07-17T15:40:33Z"
+		},
+		{
+			"checksumSHA1": "h/9BhuUZP3AFFIVCBRAedzP7uqg=",
+			"path": "github.com/gobwas/pool",
+			"revision": "971a66ef9204d674b917bb1c5a6866779f971aaa",
+			"revisionTime": "2017-03-21T13:52:20Z"
+		},
+		{
+			"checksumSHA1": "0XC1eZ8LCIDg1KKqSqvyYAiWBdI=",
+			"path": "github.com/gobwas/pool/pbufio",
+			"revision": "971a66ef9204d674b917bb1c5a6866779f971aaa",
+			"revisionTime": "2017-03-21T13:52:20Z"
+		},
+		{
+			"checksumSHA1": "c8QoZyDA+L9+MTXJkHUhj4U6+no=",
+			"path": "github.com/gobwas/pool/pbytes",
+			"revision": "971a66ef9204d674b917bb1c5a6866779f971aaa",
+			"revisionTime": "2017-03-21T13:52:20Z"
+		},
+		{
+			"checksumSHA1": "VYVK7RBDQkpYtvIjKaIoaTyF0dw=",
+			"path": "github.com/gobwas/ws",
+			"revision": "c7a54132e47d7958496e582b2439063a339df621",
+			"revisionTime": "2017-08-02T18:36:11Z"
+		},
+		{
+			"checksumSHA1": "35kUIIrif8oLl+kkYtoM5/4bPKQ=",
+			"path": "github.com/gobwas/ws/wsutil",
+			"revision": "c7a54132e47d7958496e582b2439063a339df621",
+			"revisionTime": "2017-08-02T18:36:11Z"
+		},
+		{
+			"checksumSHA1": "Thg9sicXr23/02y0VqmmJoEZIzI=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "SlBaXnUbIK20KIvvpTGJ3VhytM4=",
+			"path": "github.com/gorilla/mux",
+			"revision": "ac112f7d75a0714af1bd86ab17749b31f7809640",
+			"revisionTime": "2017-07-03T15:07:09Z"
+		},
+		{
+			"checksumSHA1": "LAqhkCywKqkTvAu+MbIRnpeFnZA=",
+			"path": "github.com/jteeuwen/go-bindata",
+			"revision": "a0ff2567cfb70903282db057e799fd826784d41d",
+			"revisionTime": "2015-10-23T09:11:02Z"
+		},
+		{
+			"checksumSHA1": "gGDSJToIqPYPEnKst2qLfuTeIZU=",
+			"path": "github.com/kr/pty",
+			"revision": "2c10821df3c3cf905230d078702dfbe9404c9b23",
+			"revisionTime": "2017-03-07T14:53:09Z"
+		},
+		{
+			"checksumSHA1": "GHrmYDDBZUztywc4osB+81VVJLk=",
+			"path": "github.com/op/go-logging",
+			"revision": "970db520ece77730c7e4724c61121037378659d9",
+			"revisionTime": "2016-03-15T20:05:05Z"
+		}
+	],
+	"rootPath": "github.com/safchain/dede"
+}
