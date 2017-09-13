@@ -4,31 +4,55 @@
     <title>C'est DéDé</title>
     <link rel="stylesheet" href="/statics/css/vendor/xterm.css" />
     <link rel="stylesheet" href="/statics/css/vendor/fullscreen.css" />
+    <link rel="stylesheet" href="/statics/css/vendor/bootstrap.min.css" />
+    <link rel="stylesheet" href="/statics/css/vendor/bootstrap-toggle.min.css" />
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js" integrity="sha256-tSRROoGfGWTveRpDHFiWVz+UXt+xKNe90wwGn25lpw8=" crossorigin="anonymous"></script>
-
+    <script src="/statics/js/vendor/jquery.3.2.1.min.js"></script>
+    <script src="/statics/js/vendor/notify.0.4.2.min.js"></script>
     <script src="/statics/js/vendor/xterm.js"></script>
     <script src="/statics/js/vendor/fit.js"></script>
     <script src="/statics/js/vendor/attach.js"></script>
     <script src="/statics/js/vendor/fullscreen.js"></script>
+    <script src="/statics/js/vendor/bootstrap-toggle.2.2.2.min.js"></script>
 
     <style>
+    .dede-terminal-container {
+      margin: 5px;
+    }
     #dede-terminal {
-        width: {{ .Width }}px;
-        height: {{ .Height }}px;
-        margin: 5px 5px;
-        padding: 2px;
+      width: {{ .Width }}px;
+      height: {{ .Height }}px;
+      padding: 2px;
+      font-size: 16px;
+    }
+    #dede-terminal-controls {
+      margin-top: 5px
     }
     </style>
   </head>
   <body>
-    <div id="dede-terminal"></div>
+    <div class="container dede-terminal-container">
+      <div id="dede-terminal"></div>
+      <div id="dede-terminal-controls">
+        <div class="checkbox">
+          <label>
+            <input id="dede-terminal-record" type="checkbox" data-toggle="toggle">
+            Recording session
+          </label>
+        </div>
+      </div>
+    <div>
     <script>
+      $('#dede-terminal-record').change(function() {
+        DedeTerminal.toggleRecord();
+      })
+
       _DedeTerminal = function(id, cols, rows, delay) {
-        this.cols = cols || 200;
-        this.rows = rows || 40;
-        this.delay = delay || 100;
+        this.id = id;
+        this.cols = parseInt(cols) || 80;
+        this.rows = parseInt(rows) || 40;
+        this.delay = parseInt(delay) || 100;
+        this.recording = false;
 
         var container = document.getElementById('dede-terminal');
         var term = term = new Terminal({
@@ -42,7 +66,7 @@
 
         var websocket;
         function wsConnect() {
-          websocket = new WebSocket("ws://" + location.host + "/terminal/" + id + "/ws");
+          websocket = new WebSocket("ws://" + location.host + "/terminal/" + id + "/ws?cols=" + cols);
           websocket.onopen = function(evt) {
             term.attach(websocket);
           };
@@ -76,6 +100,27 @@
         }
         fnc();
       };
+
+      _DedeTerminal.prototype.startRecord = function() {
+        $.ajax({
+           url : '/terminal/' + this.id + '/start-record'
+        });
+        this.recording = true;
+      }
+
+      _DedeTerminal.prototype.stopRecord = function() {
+        $.ajax({
+           url : '/terminal/' + this.id + '/stop-record'
+        });
+        this.recording = false;
+      }
+
+      _DedeTerminal.prototype.toggleRecord = function() {
+        if (this.recording)
+          this.stopRecord();
+        else
+          this.startRecord();
+      }
 
       DedeTerminal = new _DedeTerminal("{{ .ID }}", {{ .Cols }}, {{ .Rows }}, {{ .Delay }});
     </script>

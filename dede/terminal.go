@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) 2017 Red Hat, Inc.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ */
+
 package dede
 
 import (
@@ -5,38 +27,45 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"time"
 
 	"github.com/kr/pty"
 )
 
-type TerminalOpt struct {
+type TerminalOpts struct {
+	Cols int
 }
 
 type Terminal struct {
 	sync.RWMutex
-	ID     string
-	cmd    string
-	pty    *os.File
-	record ASCIINemaRecord
+	ID   string
+	Cmd  string
+	Opts TerminalOpts
+	pty  *os.File
 }
 
-func NewTerminal(id string, cmd string) *Terminal {
+// NewTerminal returns a new Terminal for the given id and command
+func NewTerminal(id string, cmd string, opts ...TerminalOpts) *Terminal {
 	t := &Terminal{
 		ID:  id,
-		cmd: cmd,
+		Cmd: cmd,
 	}
-	t.record.Env = make(map[string]string)
-	t.record.lastEntry = time.Now()
+	if len(opts) > 0 {
+		t.Opts = opts[0]
+	}
 
 	return t
 }
 
-func (t *Terminal) Start(in chan []byte, out chan []byte) {
-	os.Setenv("COLUMNS", "-1")
-	p, err := pty.Start(exec.Command(t.cmd))
-	if err != nil {
-		Log.Fatalf("Failed to start: %s\n", err)
+// Start starts reading the in chan, and writing to the out chan. the err chan
+// is used to report errors.
+func (t *Terminal) Start(in chan []byte, out chan []byte, err chan error) {
+	if t.Opts.Cols != 0 {
+		os.Setenv("COLUMNS", fmt.Sprintf("%d", t.Opts.Cols))
+	}
+	p, e := pty.Start(exec.Command(t.Cmd))
+	if e != nil {
+		err <- fmt.Errorf("failed to start: %s", e)
+		return
 	}
 
 	t.Lock()
@@ -47,13 +76,11 @@ func (t *Terminal) Start(in chan []byte, out chan []byte) {
 	go func() {
 		for {
 			buf := make([]byte, 1024)
-			n, err := p.Read(buf)
+			n, e := p.Read(buf)
 			data := buf[:n]
 
-			t.record.AddEntry(string(data))
-
-			if err != nil {
-				Log.Errorf("Failed to read pty: %s", err)
+			if e != nil {
+				err <- fmt.Errorf("failed to start: %s", e)
 				return
 			}
 			out <- data
@@ -63,20 +90,17 @@ func (t *Terminal) Start(in chan []byte, out chan []byte) {
 	// pty writing
 	go func() {
 		for b := range in {
-			if _, err := p.Write(b); err != nil {
-				Log.Errorf("Failed to write pty: %s", err)
+			if _, e := p.Write(b); e != nil {
+				err <- fmt.Errorf("failed to start: %s", e)
 				return
 			}
 		}
 	}()
 }
 
+// Close stops the current command and closes the Terminal
 func (t *Terminal) close() {
 	if err := t.pty.Close(); err != nil {
-		Log.Errorf("Failed to stop: %s\n", err)
-	}
-
-	if err := t.record.Write(fmt.Sprintf("%s/%s.json", ASCIINEMA_DATA_DIR, t.ID)); err != nil {
-		Log.Error(err)
+		Log.Errorf("failed to stop: %s", err)
 	}
 }
