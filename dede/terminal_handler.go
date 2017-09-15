@@ -132,19 +132,21 @@ func (t *TerminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 	}
 
 	data := struct {
-		ID     string
-		Cols   string
-		Rows   string
-		Width  string
-		Height string
-		Delay  string
+		ID       string
+		Cols     string
+		Rows     string
+		Width    string
+		Height   string
+		Delay    string
+		Controls string
 	}{
-		ID:     id,
-		Cols:   r.FormValue("cols"),
-		Rows:   r.FormValue("rows"),
-		Width:  width,
-		Height: height,
-		Delay:  r.FormValue("delay"),
+		ID:       id,
+		Cols:     r.FormValue("cols"),
+		Rows:     r.FormValue("rows"),
+		Width:    width,
+		Height:   height,
+		Delay:    r.FormValue("delay"),
+		Controls: r.FormValue("controls"),
 	}
 
 	tmpl := template.Must(template.New("terminal").Parse(string(asset)))
@@ -188,7 +190,7 @@ func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	}
 
 	// start a new terminal for this connection
-	term := NewTerminal(id, "/bin/bash", TerminalOpts{Cols: cols})
+	term := NewTerminal("/bin/bash", TerminalOpts{Cols: cols})
 	term.Start(in, out, nil)
 
 	var wg sync.WaitGroup

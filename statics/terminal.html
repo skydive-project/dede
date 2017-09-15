@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="/statics/css/vendor/fullscreen.css" />
     <link rel="stylesheet" href="/statics/css/vendor/bootstrap.min.css" />
     <link rel="stylesheet" href="/statics/css/vendor/bootstrap-toggle.min.css" />
+    <link rel="stylesheet" href="/statics/css/terminal.css" />
 
     <script src="/statics/js/vendor/jquery.3.2.1.min.js"></script>
     <script src="/statics/js/vendor/notify.0.4.2.min.js"></script>
@@ -14,25 +15,12 @@
     <script src="/statics/js/vendor/attach.js"></script>
     <script src="/statics/js/vendor/fullscreen.js"></script>
     <script src="/statics/js/vendor/bootstrap-toggle.2.2.2.min.js"></script>
-
-    <style>
-    .dede-terminal-container {
-      margin: 5px;
-    }
-    #dede-terminal {
-      width: {{ .Width }}px;
-      height: {{ .Height }}px;
-      padding: 2px;
-      font-size: 16px;
-    }
-    #dede-terminal-controls {
-      margin-top: 5px
-    }
-    </style>
+    <script src="/statics/js/terminal.js"></script>
   </head>
   <body>
     <div class="container dede-terminal-container">
       <div id="dede-terminal"></div>
+      {{ if eq .Controls "true" }}
       <div id="dede-terminal-controls">
         <div class="checkbox">
           <label>
@@ -41,87 +29,11 @@
           </label>
         </div>
       </div>
+      {{ end }}
     <div>
     <script>
-      $('#dede-terminal-record').change(function() {
-        DedeTerminal.toggleRecord();
-      })
-
-      _DedeTerminal = function(id, cols, rows, delay) {
-        this.id = id;
-        this.cols = parseInt(cols) || 80;
-        this.rows = parseInt(rows) || 40;
-        this.delay = parseInt(delay) || 100;
-        this.recording = false;
-
-        var container = document.getElementById('dede-terminal');
-        var term = term = new Terminal({
-          geometry: [this.cols, this.rows],
-          //debug: true
-        });
-        term.open(container);
-        term.fit();
-
-        this.term = term;
-
-        var websocket;
-        function wsConnect() {
-          websocket = new WebSocket("ws://" + location.host + "/terminal/" + id + "/ws?cols=" + cols);
-          websocket.onopen = function(evt) {
-            term.attach(websocket);
-          };
-          websocket.onclose = wsDisconnected;
-          websocket.onerror = wsOnError;
-        }
-        wsConnect();
-
-        function wsOnError() {
-          $.notify("Writing error", "error");
-        }
-
-        function wsDisconnected(evt) {
-          $.notify("Connection error", "error");
-
-          setTimeout(wsConnect, 5000);
-        }
-      };
-
-      _DedeTerminal.prototype.type = function(str) {
-        var self = this;
-
-        var el = str.split('');
-        var i = 0;
-
-        var fnc = function() {
-          self.term.send(el[i]);
-          if (++i < el.length) {
-            setTimeout(fnc, self.delay);
-          }
-        }
-        fnc();
-      };
-
-      _DedeTerminal.prototype.startRecord = function() {
-        $.ajax({
-           url : '/terminal/' + this.id + '/start-record'
-        });
-        this.recording = true;
-      }
-
-      _DedeTerminal.prototype.stopRecord = function() {
-        $.ajax({
-           url : '/terminal/' + this.id + '/stop-record'
-        });
-        this.recording = false;
-      }
-
-      _DedeTerminal.prototype.toggleRecord = function() {
-        if (this.recording)
-          this.stopRecord();
-        else
-          this.startRecord();
-      }
-
+      $("#dede-terminal").width({{ .Width }});
+      $("#dede-terminal").height({{ .Height }});
       DedeTerminal = new _DedeTerminal("{{ .ID }}", {{ .Cols }}, {{ .Rows }}, {{ .Delay }});
     </script>
   </body>

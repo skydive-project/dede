@@ -37,16 +37,14 @@ type TerminalOpts struct {
 
 type Terminal struct {
 	sync.RWMutex
-	ID   string
 	Cmd  string
 	Opts TerminalOpts
 	pty  *os.File
 }
 
 // NewTerminal returns a new Terminal for the given id and command
-func NewTerminal(id string, cmd string, opts ...TerminalOpts) *Terminal {
+func NewTerminal(cmd string, opts ...TerminalOpts) *Terminal {
 	t := &Terminal{
-		ID:  id,
 		Cmd: cmd,
 	}
 	if len(opts) > 0 {
@@ -62,6 +60,7 @@ func (t *Terminal) Start(in chan []byte, out chan []byte, err chan error) {
 	if t.Opts.Cols != 0 {
 		os.Setenv("COLUMNS", fmt.Sprintf("%d", t.Opts.Cols))
 	}
+
 	p, e := pty.Start(exec.Command(t.Cmd))
 	if e != nil {
 		err <- fmt.Errorf("failed to start: %s", e)

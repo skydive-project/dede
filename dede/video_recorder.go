@@ -22,8 +22,5 @@
 
 package dede
 
-type TerminalRecorder interface {
-	AddInputEntry(data string)
-	AddOutputEntry(data string)
-	Write() error
+type VideoRecorder struct {
 }

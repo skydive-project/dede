@@ -1,0 +1,19 @@
+body {
+  background-color: #333;
+}
+
+.dede-terminal-container {
+  margin: 5px;
+  margin-top: 25px;
+}
+#dede-terminal {
+  border: 5px solid #555;
+  border-radius: 5px;
+  padding: 2px;
+  font-size: 16px;
+  background-color: #000;
+}
+#dede-terminal-controls {
+  margin-top: 5px;
+  color: #eee;
+}

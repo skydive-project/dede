@@ -69,7 +69,7 @@ func asset(w http.ResponseWriter, r *http.Request) {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	asset := statics.MustAsset("statics/server.html")
+	asset := statics.MustAsset("statics/index.html")
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -91,4 +91,5 @@ func InitServer() {
 	router.PathPrefix("/statics").HandlerFunc(asset)
 
 	NewTerminalHandler(router)
+	NewFakeMouseHandler(router)
 }
