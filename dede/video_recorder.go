@@ -22,5 +22,67 @@
 
 package dede
 
-type VideoRecorder struct {
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+)
+
+type videoRecorder struct {
+	filename  string
+	frameRate int
+	width     int
+	height    int
+	cancel    context.CancelFunc
+}
+
+func (v *videoRecorder) start() error {
+	cmd := "ffmpeg"
+	args := []string{
+		"-f", "x11grab",
+		"-framerate", fmt.Sprintf("%d", v.frameRate),
+		"-video_size", fmt.Sprintf("%dx%d", v.width, v.height),
+		"-i", ":1.0+0,0",
+		"-draw_mouse", "0",
+		"-segment_format_options", "movflags=+faststart",
+		"-crf", "0",
+		"-preset", "ultrafast",
+		"-qp", "0",
+		"-y",
+		"-an", v.filename}
+
+	Log.Infof("start video recording: %s %v", cmd, args)
+
+	command := exec.Command(cmd, args...)
+	if err := command.Start(); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	v.cancel = cancel
+
+	go func() {
+		<-ctx.Done()
+		err := command.Process.Signal(os.Interrupt)
+		if err != nil {
+			Log.Errorf("cannot kill video recorder process: %s %v", cmd, args)
+			return
+		}
+		command.Wait()
+	}()
+	return nil
+}
+
+func (v *videoRecorder) stop() {
+	v.cancel()
+}
+
+func newVideoRecorder(filename string, width int, height int, frameRate int) *videoRecorder {
+	return &videoRecorder{
+		filename:  filename,
+		width:     width,
+		height:    height,
+		frameRate: frameRate,
+	}
 }

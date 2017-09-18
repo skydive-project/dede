@@ -20,31 +20,30 @@
  *
  */
 
-package dede
+package cmd
 
 import (
-	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/skydive-project/dede/statics"
+	"github.com/skydive-project/dede/dede"
+	"github.com/spf13/cobra"
 )
 
-type fakeMouseHandler struct{}
+var (
+	port    int
+	dataDir string
+)
 
-func (t *fakeMouseHandler) fakeMouseInstall(w http.ResponseWriter, r *http.Request) {
-	asset := statics.MustAsset("statics/js/fake-mouse.js")
-
-	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-
-	// TODO(safchain) add templating here as we may want to change the images
-	w.Write(asset)
+var server = &cobra.Command{
+	Use:          "server",
+	Short:        "dede server",
+	Long:         "dede server",
+	SilenceUsage: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		dede.InitServer(dataDir, port)
+		dede.ListenAndServe()
+	},
 }
 
-func registerFakeMouseHandler(router *mux.Router) *fakeMouseHandler {
-	f := &fakeMouseHandler{}
-
-	router.HandleFunc("/fake-mouse/install", f.fakeMouseInstall)
-
-	return f
+func init() {
+	server.Flags().StringVarP(&dataDir, "data-dir", "", "/tmp", "data dir path, place where the files will go")
+	server.Flags().IntVarP(&port, "port", "", 12345, "port used by the DeDe server, default: 12345")
 }

@@ -20,31 +20,10 @@
  *
  */
 
-package dede
+package main
 
-import (
-	"net/http"
+import "github.com/skydive-project/dede/cmd"
 
-	"github.com/gorilla/mux"
-	"github.com/skydive-project/dede/statics"
-)
-
-type fakeMouseHandler struct{}
-
-func (t *fakeMouseHandler) fakeMouseInstall(w http.ResponseWriter, r *http.Request) {
-	asset := statics.MustAsset("statics/js/fake-mouse.js")
-
-	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-
-	// TODO(safchain) add templating here as we may want to change the images
-	w.Write(asset)
-}
-
-func registerFakeMouseHandler(router *mux.Router) *fakeMouseHandler {
-	f := &fakeMouseHandler{}
-
-	router.HandleFunc("/fake-mouse/install", f.fakeMouseInstall)
-
-	return f
+func main() {
+	cmd.RootCmd.Execute()
 }

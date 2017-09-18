@@ -23,9 +23,11 @@
 package dede
 
 import (
+	"fmt"
 	"html/template"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -35,17 +37,31 @@ import (
 	"github.com/skydive-project/dede/statics"
 )
 
-const (
-	ASCIINEMA_DATA_DIR = "/tmp"
-)
-
 var (
 	Log = logging.MustGetLogger("default")
 
 	format = logging.MustStringFormatter(`%{color}%{time:15:04:05.000} ▶ %{level:.6s}%{color:reset} %{message}`)
 	router *mux.Router
 	lock   sync.RWMutex
+
+	dataDir = "/tmp"
+	port    int
+
+	baseURL = "/session/{sessionID}/{chapterID}/{sectionID}"
 )
+
+func pathFromVars(vars map[string]string, suffix string) (string, error) {
+	path := fmt.Sprintf("%s/%s/%s", dataDir, vars["sessionID"], vars["chapterID"])
+	if err := os.MkdirAll(path, 0755); err != nil {
+		Log.Errorf("unable to create data dir %s: %s", path, err)
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s/%s/%s-%s", dataDir, vars["sessionID"], vars["chapterID"], vars["sectionID"], suffix), nil
+}
+
+func idFromVars(vars map[string]string, suffix string) string {
+	return fmt.Sprintf("%s-%s-%s-%s", vars["sessionID"], vars["chapterID"], vars["sectionID"], suffix)
+}
 
 func asset(w http.ResponseWriter, r *http.Request) {
 	upath := r.URL.Path
@@ -79,17 +95,22 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListenAndServe() {
-	Log.Info("Dede server started")
-	Log.Fatal(http.ListenAndServe(":12345", router))
+	Log.Info("DeDe server started")
+	Log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 }
 
-func InitServer() {
+func InitServer(dd string, pp int) {
 	logging.SetFormatter(format)
+
+	dataDir = dd
+	port = pp
 
 	router = mux.NewRouter()
 	router.HandleFunc("/", index)
 	router.PathPrefix("/statics").HandlerFunc(asset)
 
-	NewTerminalHandler(router)
-	NewFakeMouseHandler(router)
+	registerTerminalHandler(router)
+	registerFakeMouseHandler(router)
+	registerVideoHandler(router)
+	registerTextHandler(router)
 }

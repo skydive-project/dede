@@ -31,37 +31,34 @@ import (
 	"github.com/kr/pty"
 )
 
-type TerminalOpts struct {
-	Cols int
+type terminalOpts struct {
+	cols int
 }
 
-type Terminal struct {
+type terminal struct {
 	sync.RWMutex
-	Cmd  string
-	Opts TerminalOpts
+	cmd  string
+	opts terminalOpts
 	pty  *os.File
 }
 
-// NewTerminal returns a new Terminal for the given id and command
-func NewTerminal(cmd string, opts ...TerminalOpts) *Terminal {
-	t := &Terminal{
-		Cmd: cmd,
+func newTerminal(cmd string, opts ...terminalOpts) *terminal {
+	t := &terminal{
+		cmd: cmd,
 	}
 	if len(opts) > 0 {
-		t.Opts = opts[0]
+		t.opts = opts[0]
 	}
 
 	return t
 }
 
-// Start starts reading the in chan, and writing to the out chan. the err chan
-// is used to report errors.
-func (t *Terminal) Start(in chan []byte, out chan []byte, err chan error) {
-	if t.Opts.Cols != 0 {
-		os.Setenv("COLUMNS", fmt.Sprintf("%d", t.Opts.Cols))
+func (t *terminal) start(in chan []byte, out chan []byte, err chan error) {
+	if t.opts.cols != 0 {
+		os.Setenv("COLUMNS", fmt.Sprintf("%d", t.opts.cols))
 	}
 
-	p, e := pty.Start(exec.Command(t.Cmd))
+	p, e := pty.Start(exec.Command(t.cmd))
 	if e != nil {
 		err <- fmt.Errorf("failed to start: %s", e)
 		return
@@ -97,8 +94,7 @@ func (t *Terminal) Start(in chan []byte, out chan []byte, err chan error) {
 	}()
 }
 
-// Close stops the current command and closes the Terminal
-func (t *Terminal) close() {
+func (t *terminal) close() {
 	if err := t.pty.Close(); err != nil {
 		Log.Errorf("failed to stop: %s", err)
 	}

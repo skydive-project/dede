@@ -26,17 +26,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path"
 	"sync"
 	"time"
 )
 
-type ASCIINemaRecorderEntry struct {
+type asciinemaRecorderEntry struct {
 	delay float64
 	data  string
 }
 
-type ASCIINemaRecorder struct {
+type asciinemaRecorder struct {
 	Version   int                      `json:"version"`
 	Width     int                      `json:"width"`
 	Height    int                      `json:"height"`
@@ -44,24 +43,23 @@ type ASCIINemaRecorder struct {
 	Command   string                   `json:"command"`
 	Title     string                   `json:"title"`
 	Env       map[string]string        `json:"env"`
-	Stdout    []ASCIINemaRecorderEntry `json:"stdout"`
+	Stdout    []asciinemaRecorderEntry `json:"stdout"`
 	lastEntry time.Time
 	lock      sync.RWMutex
-	path      string
-	id        string
+	filename  string
 }
 
-func (a *ASCIINemaRecorderEntry) MarshalJSON() ([]byte, error) {
+func (a *asciinemaRecorderEntry) MarshalJSON() ([]byte, error) {
 	return json.MarshalIndent([]interface{}{a.delay, a.data}, "", "  ")
 }
 
-func (a *ASCIINemaRecorder) AddEntry(data string) {
+func (a *asciinemaRecorder) addEntry(data string) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
 	now := time.Now()
 	delay := float64(now.Sub(a.lastEntry).Nanoseconds()) / float64(time.Second)
-	a.Stdout = append(a.Stdout, ASCIINemaRecorderEntry{
+	a.Stdout = append(a.Stdout, asciinemaRecorderEntry{
 		delay: delay,
 		data:  data,
 	})
@@ -69,15 +67,15 @@ func (a *ASCIINemaRecorder) AddEntry(data string) {
 	a.Duration += delay
 }
 
-func (a *ASCIINemaRecorder) AddInputEntry(data string) {
-	a.AddEntry(data)
+func (a *asciinemaRecorder) addInputEntry(data string) {
+	a.addEntry(data)
 }
 
-func (a *ASCIINemaRecorder) AddOutputEntry(data string) {
-	a.AddEntry(data)
+func (a *asciinemaRecorder) addOutputEntry(data string) {
+	a.addEntry(data)
 }
 
-func (a *ASCIINemaRecorder) Write() error {
+func (a *asciinemaRecorder) write() error {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -86,19 +84,17 @@ func (a *ASCIINemaRecorder) Write() error {
 		return fmt.Errorf("Unable to serialize asciinema file: %s", err)
 	}
 
-	p := path.Join(a.path, fmt.Sprintf("asciinema-%s.json", a.id))
-	if err := ioutil.WriteFile(p, data, 0644); err != nil {
+	if err := ioutil.WriteFile(a.filename, data, 0644); err != nil {
 		return fmt.Errorf("Unable to write asciinema file: %s", err)
 	}
 
 	return nil
 }
 
-func NewASCIINemaRecorder(id, path string) *ASCIINemaRecorder {
-	return &ASCIINemaRecorder{
+func newAsciinemaRecorder(filemane string) *asciinemaRecorder {
+	return &asciinemaRecorder{
 		Env:       make(map[string]string),
 		lastEntry: time.Now(),
-		id:        id,
-		path:      path,
+		filename:  filemane,
 	}
 }

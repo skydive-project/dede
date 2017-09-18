@@ -26,27 +26,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path"
 	"strings"
 	"sync"
 )
 
-type HistoryRecorderEntry struct {
+type historyRecorderEntry struct {
 	Input  string
 	Output string
 }
 
-type HistoryRecorder struct {
-	Entries       []HistoryRecorderEntry
+type historyRecorder struct {
+	Entries       []historyRecorderEntry
 	lock          sync.RWMutex
-	path          string
-	id            string
-	current       HistoryRecorderEntry
+	filename      string
+	current       historyRecorderEntry
 	prevData      string
 	prevDirection string
 }
 
-func (h *HistoryRecorder) AddInputEntry(data string) {
+func (h *historyRecorder) addInputEntry(data string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -54,7 +52,7 @@ func (h *HistoryRecorder) AddInputEntry(data string) {
 		h.Entries = append(h.Entries, h.current)
 
 		// generate a new entry
-		h.current = HistoryRecorderEntry{}
+		h.current = historyRecorderEntry{}
 	}
 
 	t := strings.TrimSuffix(data, "\r")
@@ -65,7 +63,7 @@ func (h *HistoryRecorder) AddInputEntry(data string) {
 	h.prevDirection = "input"
 }
 
-func (h *HistoryRecorder) AddOutputEntry(data string) {
+func (h *historyRecorder) addOutputEntry(data string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -78,7 +76,7 @@ func (h *HistoryRecorder) AddOutputEntry(data string) {
 	h.prevDirection = "output"
 }
 
-func (h *HistoryRecorder) Write() error {
+func (h *historyRecorder) write() error {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -91,17 +89,15 @@ func (h *HistoryRecorder) Write() error {
 		return fmt.Errorf("Unable to serialize history file: %s", err)
 	}
 
-	p := path.Join(h.path, fmt.Sprintf("history-%s.json", h.id))
-	if err := ioutil.WriteFile(p, data, 0644); err != nil {
+	if err := ioutil.WriteFile(h.filename, data, 0644); err != nil {
 		return fmt.Errorf("Unable to write asciinema file: %s", err)
 	}
 
 	return nil
 }
 
-func NewHistoryRecorder(id, path string) *HistoryRecorder {
-	return &HistoryRecorder{
-		path: path,
-		id:   id,
+func newHistoryRecorder(filename string) *historyRecorder {
+	return &historyRecorder{
+		filename: filename,
 	}
 }

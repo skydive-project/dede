@@ -23,71 +23,55 @@
 package dede
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/skydive-project/skydive/common"
 )
 
-type videoHanlder struct {
-	sync.RWMutex
-	recorder *videoRecorder
+type TextHandler struct {
 }
 
-func (v *videoHanlder) startRecord(w http.ResponseWriter, r *http.Request) {
+func (v *TextHandler) addText(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	v.RLock()
-	ok := v.recorder == nil
-	v.RUnlock()
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	vp, err := pathFromVars(vars, "video.mp4")
+	tp, err := pathFromVars(vars, "text.json")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	recorder := newVideoRecorder(vp, 1900, 1080, 10)
-	if err := recorder.start(); err != nil {
-		Log.Errorf("error while starting video record: %s", err)
+	text := struct {
+		Type string
+		Text string
+	}{}
 
+	if err = common.JSONDecode(r.Body, &text); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	data, err := json.MarshalIndent(text, "", "  ")
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	v.Lock()
-	v.recorder = recorder
-	v.Unlock()
+	if err := ioutil.WriteFile(tp, data, 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	Log.Infof("start video recording %s", idFromVars(vars, "video"))
 	w.WriteHeader(http.StatusOK)
 }
 
-func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func registerTextHandler(router *mux.Router) *TextHandler {
+	t := &TextHandler{}
 
-	v.RLock()
-	recorder := v.recorder
-	v.RUnlock()
-	if recorder == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	recorder.stop()
-
-	Log.Infof("stop video recording %s", idFromVars(vars, "video"))
-	w.WriteHeader(http.StatusOK)
-}
-
-func registerVideoHandler(router *mux.Router) *videoHanlder {
-	t := &videoHanlder{}
-
-	router.HandleFunc(baseURL+"/video/start-record", t.startRecord)
-	router.HandleFunc(baseURL+"/video/stop-record", t.stopRecord)
+	router.HandleFunc(baseURL+"/text", t.addText)
 
 	return t
 }

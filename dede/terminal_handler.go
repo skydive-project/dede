@@ -37,18 +37,18 @@ import (
 type sessions struct {
 	sync.RWMutex
 	id        string
-	recorders []TerminalRecorder
+	recorders []terminalRecorder
 	recording bool
 }
 
-type TerminalHanlder struct {
+type terminalHanlder struct {
 	sync.RWMutex
 	terminalIndexes map[string]*sessions
 }
 
-func (t *TerminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id := idFromVars(vars, "term")
 
 	t.RLock()
 	s, ok := t.terminalIndexes[id]
@@ -64,19 +64,29 @@ func (t *TerminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Req
 	}
 
 	s.Lock()
-	s.recorders = append(s.recorders, NewASCIINemaRecorder(id, ASCIINEMA_DATA_DIR))
-	s.recorders = append(s.recorders, NewHistoryRecorder(id, ASCIINEMA_DATA_DIR))
+	ap, err := pathFromVars(vars, "asciinema.json")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	s.recorders = append(s.recorders, newAsciinemaRecorder(ap))
+
+	tp, err := pathFromVars(vars, "terminal.json")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	s.recorders = append(s.recorders, newHistoryRecorder(tp))
 	s.recording = true
 	s.Unlock()
 
 	Log.Infof("start recording terminal session %s", id)
-
 	w.WriteHeader(http.StatusOK)
 }
 
-func (t *TerminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id := idFromVars(vars, "term")
 
 	t.RLock()
 	s, ok := t.terminalIndexes[id]
@@ -96,7 +106,7 @@ func (t *TerminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Requ
 	}
 
 	for _, recorder := range recorders {
-		if err := recorder.Write(); err != nil {
+		if err := recorder.write(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
@@ -109,13 +119,12 @@ func (t *TerminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Requ
 	s.Unlock()
 
 	Log.Infof("stop recording terminal session %s", id)
-
 	w.WriteHeader(http.StatusOK)
 }
 
-func (t *TerminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id := idFromVars(vars, "term")
 
 	asset := statics.MustAsset("statics/terminal.html")
 
@@ -159,7 +168,7 @@ func (t *TerminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 	t.Unlock()
 }
 
-func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -190,8 +199,8 @@ func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	}
 
 	// start a new terminal for this connection
-	term := NewTerminal("/bin/bash", TerminalOpts{Cols: cols})
-	term.Start(in, out, nil)
+	term := newTerminal("/bin/bash", terminalOpts{cols: cols})
+	term.start(in, out, nil)
 
 	var wg sync.WaitGroup
 
@@ -203,7 +212,7 @@ func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 		for msg := range out {
 			s.RLock()
 			for _, recorder := range s.recorders {
-				recorder.AddOutputEntry(string(msg))
+				recorder.addOutputEntry(string(msg))
 			}
 			s.RUnlock()
 
@@ -228,7 +237,7 @@ func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 
 			s.RLock()
 			for _, recorder := range s.recorders {
-				recorder.AddInputEntry(string(msg))
+				recorder.addInputEntry(string(msg))
 			}
 			s.RUnlock()
 			in <- msg
@@ -244,15 +253,15 @@ func (t *TerminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	}()
 }
 
-func NewTerminalHandler(router *mux.Router) *TerminalHanlder {
-	t := &TerminalHanlder{
+func registerTerminalHandler(router *mux.Router) *terminalHanlder {
+	t := &terminalHanlder{
 		terminalIndexes: make(map[string]*sessions),
 	}
 
-	router.HandleFunc("/terminal/{id}/ws", t.terminalWebsocket)
-	router.HandleFunc("/terminal/{id}/start-record", t.terminalStartRecord)
-	router.HandleFunc("/terminal/{id}/stop-record", t.terminalStopRecord)
-	router.HandleFunc("/terminal/{id}", t.terminalIndex)
+	router.HandleFunc(baseURL+"/terminal/ws", t.terminalWebsocket)
+	router.HandleFunc(baseURL+"/terminal/start-record", t.terminalStartRecord)
+	router.HandleFunc(baseURL+"/terminal/stop-record", t.terminalStopRecord)
+	router.HandleFunc(baseURL+"/terminal", t.terminalIndex)
 
 	return t
 }
