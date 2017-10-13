@@ -98,8 +98,6 @@ _DedeTerminal.prototype.typeCmdWait = function(str, regex, callback) {
 
   var re = new RegExp(regex, "m");
   this.onMessageCallback = function(msg) {
-
-    console.log(msg.data);
     if (re.test(msg.data)) {
       self.onMessageCallback = null;
       if (callback) callback();
@@ -109,9 +107,10 @@ _DedeTerminal.prototype.typeCmdWait = function(str, regex, callback) {
   this.typeCmd(str);
 };
 
-_DedeTerminal.prototype.startRecord = function() {
+_DedeTerminal.prototype.startRecord = function(sessionID, chapterID, sectionID) {
   $.ajax({
-     url : '/terminal/' + this.id + '/start-record'
+     url : '/terminal/' + this.id + '/start-record?sessionID=' + sessionID +
+           "&chapterID=" + chapterID + "&sectionID=" + sectionID
   });
   this.recording = true;
 };

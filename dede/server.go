@@ -46,21 +46,19 @@ var (
 
 	dataDir = "/tmp"
 	port    int
-
-	baseURL = "/session/{sessionID}/{chapterID}/{sectionID}"
 )
 
-func pathFromVars(vars map[string]string, suffix string) (string, error) {
-	path := fmt.Sprintf("%s/%s/%s", dataDir, vars["sessionID"], vars["chapterID"])
+func createPathFromForm(r *http.Request, filename string) (string, error) {
+	path := fmt.Sprintf("%s/%s/%s/%s", dataDir, r.FormValue("sessionID"), r.FormValue("chapterID"), r.FormValue("sectionID"))
 	if err := os.MkdirAll(path, 0755); err != nil {
 		Log.Errorf("unable to create data dir %s: %s", path, err)
 		return "", err
 	}
-	return fmt.Sprintf("%s/%s/%s/%s-%s", dataDir, vars["sessionID"], vars["chapterID"], vars["sectionID"], suffix), nil
+	return filepath.Join(dataDir, r.FormValue("sessionID"), r.FormValue("chapterID"), r.FormValue("sectionID"), filename), nil
 }
 
-func idFromVars(vars map[string]string, suffix string) string {
-	return fmt.Sprintf("%s-%s-%s-%s", vars["sessionID"], vars["chapterID"], vars["sectionID"], suffix)
+func idFromForm(r *http.Request, filename string) string {
+	return fmt.Sprintf("%s-%s-%s-%s", r.FormValue("sessionID"), r.FormValue("chapterID"), r.FormValue("sectionID"), filename)
 }
 
 func asset(w http.ResponseWriter, r *http.Request) {

@@ -34,7 +34,7 @@ import (
 	"github.com/skydive-project/dede/statics"
 )
 
-type sessions struct {
+type terminalSession struct {
 	sync.RWMutex
 	id        string
 	recorders []terminalRecorder
@@ -43,15 +43,27 @@ type sessions struct {
 
 type terminalHanlder struct {
 	sync.RWMutex
-	terminalIndexes map[string]*sessions
+	sessions map[string]*terminalSession
 }
 
 func (t *terminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Request) {
+	tp, err := createPathFromForm(r, "history.json")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ap, err := createPathFromForm(r, "asciinema.json")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)
-	id := idFromVars(vars, "term")
+	id := vars["id"]
 
 	t.RLock()
-	s, ok := t.terminalIndexes[id]
+	s, ok := t.sessions[id]
 	t.RUnlock()
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
@@ -64,32 +76,21 @@ func (t *terminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Req
 	}
 
 	s.Lock()
-	ap, err := pathFromVars(vars, "asciinema.json")
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	s.recorders = append(s.recorders, newAsciinemaRecorder(ap))
-
-	tp, err := pathFromVars(vars, "terminal.json")
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	s.recorders = append(s.recorders, newHistoryRecorder(tp))
 	s.recording = true
 	s.Unlock()
 
-	Log.Infof("start recording terminal session %s", id)
+	Log.Infof("start recording terminal session %s", tp)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (t *terminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := idFromVars(vars, "term")
+	id := vars["id"]
 
 	t.RLock()
-	s, ok := t.terminalIndexes[id]
+	s, ok := t.sessions[id]
 	t.RUnlock()
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
@@ -124,7 +125,7 @@ func (t *terminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Requ
 
 func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := idFromVars(vars, "term")
+	id := vars["id"]
 
 	asset := statics.MustAsset("statics/terminal.html")
 
@@ -142,6 +143,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 
 	data := struct {
 		ID       string
+		Title    string
 		Cols     string
 		Rows     string
 		Width    string
@@ -150,6 +152,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 		Controls string
 	}{
 		ID:       id,
+		Title:    r.FormValue("title"),
 		Cols:     r.FormValue("cols"),
 		Rows:     r.FormValue("rows"),
 		Width:    width,
@@ -164,7 +167,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 	}
 
 	t.Lock()
-	t.terminalIndexes[id] = &sessions{}
+	t.sessions[id] = &terminalSession{}
 	t.Unlock()
 }
 
@@ -173,7 +176,7 @@ func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	id := vars["id"]
 
 	t.RLock()
-	s, ok := t.terminalIndexes[id]
+	s, ok := t.sessions[id]
 	t.RUnlock()
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
@@ -255,13 +258,13 @@ func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 
 func registerTerminalHandler(router *mux.Router) *terminalHanlder {
 	t := &terminalHanlder{
-		terminalIndexes: make(map[string]*sessions),
+		sessions: make(map[string]*terminalSession),
 	}
 
-	router.HandleFunc(baseURL+"/terminal/ws", t.terminalWebsocket)
-	router.HandleFunc(baseURL+"/terminal/start-record", t.terminalStartRecord)
-	router.HandleFunc(baseURL+"/terminal/stop-record", t.terminalStopRecord)
-	router.HandleFunc(baseURL+"/terminal", t.terminalIndex)
+	router.HandleFunc("/terminal/{id}/ws", t.terminalWebsocket)
+	router.HandleFunc("/terminal/{id}/start-record", t.terminalStartRecord)
+	router.HandleFunc("/terminal/{id}/stop-record", t.terminalStopRecord)
+	router.HandleFunc("/terminal/{id}", t.terminalIndex)
 
 	return t
 }

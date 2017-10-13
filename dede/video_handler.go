@@ -31,23 +31,23 @@ import (
 
 type videoHanlder struct {
 	sync.RWMutex
-	recorder *videoRecorder
+	recorders map[string]*videoRecorder
 }
 
 func (v *videoHanlder) startRecord(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	v.RLock()
-	ok := v.recorder == nil
-	v.RUnlock()
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
+	vp, err := createPathFromForm(r, "video.mp4")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	vp, err := pathFromVars(vars, "video.mp4")
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	id := idFromForm(r, "video.mp4")
+
+	v.RLock()
+	ok := v.recorders[id] == nil
+	v.RUnlock()
+	if !ok {
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
@@ -60,18 +60,18 @@ func (v *videoHanlder) startRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v.Lock()
-	v.recorder = recorder
+	v.recorders[id] = recorder
 	v.Unlock()
 
-	Log.Infof("start video recording %s", idFromVars(vars, "video"))
+	Log.Infof("start video recording %s", vp)
 	w.WriteHeader(http.StatusOK)
 }
 
 func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	id := idFromForm(r, "video.mp4")
 
 	v.RLock()
-	recorder := v.recorder
+	recorder := v.recorders[id]
 	v.RUnlock()
 	if recorder == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -79,15 +79,21 @@ func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
 	}
 	recorder.stop()
 
-	Log.Infof("stop video recording %s", idFromVars(vars, "video"))
+	v.Lock()
+	delete(v.recorders, id)
+	v.Unlock()
+
+	Log.Infof("stop video recording")
 	w.WriteHeader(http.StatusOK)
 }
 
 func registerVideoHandler(router *mux.Router) *videoHanlder {
-	t := &videoHanlder{}
+	t := &videoHanlder{
+		recorders: make(map[string]*videoRecorder),
+	}
 
-	router.HandleFunc(baseURL+"/video/start-record", t.startRecord)
-	router.HandleFunc(baseURL+"/video/stop-record", t.stopRecord)
+	router.HandleFunc("/video/start-record", t.startRecord)
+	router.HandleFunc("/video/stop-record", t.stopRecord)
 
 	return t
 }

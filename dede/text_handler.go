@@ -31,13 +31,11 @@ import (
 	"github.com/skydive-project/skydive/common"
 )
 
-type TextHandler struct {
+type textHandler struct {
 }
 
-func (v *TextHandler) addText(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	tp, err := pathFromVars(vars, "text.json")
+func (v *textHandler) addText(w http.ResponseWriter, r *http.Request) {
+	tp, err := createPathFromForm(r, "text.json")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -64,14 +62,13 @@ func (v *TextHandler) addText(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Log.Infof("start video recording %s", idFromVars(vars, "video"))
+	Log.Infof("Text recorded %s", tp)
 	w.WriteHeader(http.StatusOK)
 }
 
-func registerTextHandler(router *mux.Router) *TextHandler {
-	t := &TextHandler{}
+func registerTextHandler(router *mux.Router) *textHandler {
+	t := &textHandler{}
 
-	router.HandleFunc(baseURL+"/text", t.addText)
-
+	router.HandleFunc("/text", t.addText)
 	return t
 }
