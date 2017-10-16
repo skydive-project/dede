@@ -93,8 +93,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListenAndServe() {
-	Log.Info("DeDe server started")
-	Log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
+	addr := fmt.Sprintf(":%d", port)
+	Log.Info("DeDe server started on " + addr)
+	Log.Fatal(http.ListenAndServe(addr, router))
 }
 
 func InitServer(dd string, pp int) {

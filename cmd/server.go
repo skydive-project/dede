@@ -45,5 +45,5 @@ var server = &cobra.Command{
 
 func init() {
 	server.Flags().StringVarP(&dataDir, "data-dir", "", "/tmp", "data dir path, place where the files will go")
-	server.Flags().IntVarP(&port, "port", "", 12345, "port used by the DeDe server, default: 12345")
+	server.Flags().IntVarP(&port, "port", "", 11664, "port used by the DeDe server, default: 11664")
 }
