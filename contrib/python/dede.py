@@ -167,16 +167,22 @@ class DedeVideoRecorder:
 
 
 if __name__ == '__main__':
-    driver = webdriver.Remote(
-      command_executor='http://127.0.0.1:4444/wd/hub',
-      desired_capabilities={"browserName": "chrome"})
-    driver.maximize_window()
-    driver.get("https://github.com/skydive-project/dede")
+    #driver = webdriver.Remote(
+    #  command_executor='http://127.0.0.1:4444/wd/hub',
+    #  desired_capabilities={"browserName": "chrome"})
+    driver = webdriver.Chrome()
+
+    time.sleep(10)
+
+    #driver.maximize_window()
+    driver.get("http://192.168.50.10:8082")
     driver.set_script_timeout(20)
+
+    window_handle = driver.window_handles[-1]
 
     time.sleep(2)
 
-    dede = Dede("http://192.168.1.21:55555", driver, 1)
+    dede = Dede("http://localhost:55555", driver, 1)
     fake_mouse = dede.fake_mouse()
     fake_mouse.install()
 
@@ -187,38 +193,55 @@ if __name__ == '__main__':
         time.sleep(2)
 
         # start the demo
-        clone = driver.find_element_by_xpath(
-            "//details[contains(@class, 'get-repo-select-menu')]")
-        fake_mouse.click_on(clone)
-
-        copy = driver.find_element_by_xpath(
-            "//button[@aria-label='Copy to clipboard']")
-        fake_mouse.click_on(copy)
-
-        input = driver.find_element_by_xpath(
-            "//input[contains(@aria-label, 'Clone this repository at')]")
-        url = input.get_property("value")
-
-        time.sleep(1)
-
         tab1 = dede.terminal_manager().open_terminal_tab('clone')
-        tab2 = dede.terminal_manager().open_terminal_tab('list')
 
-        time.sleep(1)
+        time.sleep(100)
 
+	# create docker network
         with dede.section(1):
             tab1.focus()
             tab1.start_record()
-            tab1.type_cmd_wait("cd /tmp", "safchain")
-            tab1.type_cmd_wait("git clone %s" % url, "safchain")
-            tab1.type_cmd_wait("cd dede", "safchain")
+            tab1.type_cmd_wait("ssh analyzer", "vagrant")
+            time.sleep(1)
+            tab1.type_cmd_wait("docker network create -d overlay swarmnet", "vagrant")
+            time.sleep(1)
             tab1.stop_record()
 
+	# start mysql
         with dede.section(2):
-            tab2.focus()
-            tab2.start_record()
-            tab2.type_cmd_wait("ls -al", "safchain")
-            tab2.stop_record()
+            tab1.focus()
+            tab1.start_record()
+            tab1.type_cmd_wait("docker service create --name mysql --network swarmnet --constraint 'node.hostname==agent1' --publish 3306:3306 --env='MYSQL_ROOT_PASSWORD=password' mysql", "vagrant")
+            time.sleep(1)
+            tab1.stop_record()
+
+	driver.switch_to_window(window_handle)
+
+	time.sleep(20)
+
+	# start 1st wordpress
+        with dede.section(2):
+            tab1.focus()
+            tab1.start_record()
+            tab1.type_cmd_wait("docker service create --name wordpress1 --network swarmnet --constraint 'node.hostname==agent1' --publish 7070:80  -e WORDPRESS_DB_HOST=mysql -e WORDPRESS_DB_PASSWORD=password wordpress", "vagrant")
+            time.sleep(1)
+            tab1.stop_record()
+
+	driver.switch_to_window(window_handle)
+
+	time.sleep(20)
+
+	# start 2nd wordpress
+        with dede.section(2):
+            tab1.focus()
+            tab1.start_record()
+            tab1.type_cmd_wait("docker service create --name wordpress2 --network swarmnet --constraint 'node.hostname==agent2' --publish 7071:80  -e WORDPRESS_DB_HOST=mysql -e WORDPRESS_DB_PASSWORD=password wordpress", "vagrant")
+            time.sleep(1)
+            tab1.stop_record()
+
+	driver.switch_to_window(window_handle)
+
+	time.sleep(20)
 
         record.stop()
 
