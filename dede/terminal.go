@@ -27,6 +27,8 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
+	"unsafe"
 
 	"github.com/kr/pty"
 )
@@ -53,9 +55,32 @@ func newTerminal(cmd string, opts ...terminalOpts) *terminal {
 	return t
 }
 
+type termsize struct {
+	Rows uint16
+	Cols uint16
+	X    uint16
+	Y    uint16
+}
+
+func setsize(f *os.File, ts *termsize) error {
+	_, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		f.Fd(),
+		syscall.TIOCSWINSZ,
+		uintptr(unsafe.Pointer(ts)),
+	)
+	if errno != 0 {
+		return syscall.Errno(errno)
+	}
+	return nil
+}
+
 func (t *terminal) start(in chan []byte, out chan []byte, err chan error) {
+	sz := &termsize{
+		Cols: 80,
+	}
 	if t.opts.cols != 0 {
-		os.Setenv("COLUMNS", fmt.Sprintf("%d", t.opts.cols))
+		sz.Cols = uint16(t.opts.cols)
 	}
 
 	p, e := pty.Start(exec.Command(t.cmd))
@@ -63,6 +88,7 @@ func (t *terminal) start(in chan []byte, out chan []byte, err chan error) {
 		err <- fmt.Errorf("failed to start: %s", e)
 		return
 	}
+	setsize(p, sz)
 
 	t.Lock()
 	t.pty = p
