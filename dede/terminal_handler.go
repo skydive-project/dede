@@ -43,6 +43,7 @@ type terminalSession struct {
 
 type terminalHanlder struct {
 	sync.RWMutex
+	prefix   string
 	sessions map[string]*terminalSession
 }
 
@@ -142,6 +143,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 	}
 
 	data := struct {
+		Prefix   string
 		ID       string
 		Title    string
 		Cols     string
@@ -150,7 +152,9 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 		Height   string
 		Delay    string
 		Controls string
+		InitCmd  string
 	}{
+		Prefix:   t.prefix,
 		ID:       id,
 		Title:    r.FormValue("title"),
 		Cols:     r.FormValue("cols"),
@@ -159,6 +163,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 		Height:   height,
 		Delay:    r.FormValue("delay"),
 		Controls: r.FormValue("controls"),
+		InitCmd:  r.FormValue("cmd"),
 	}
 
 	tmpl := template.Must(template.New("terminal").Parse(string(asset)))
@@ -256,15 +261,21 @@ func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	}()
 }
 
-func registerTerminalHandler(router *mux.Router) *terminalHanlder {
+func RegisterTerminalHandler(prefix string, router *mux.Router) *terminalHanlder {
 	t := &terminalHanlder{
 		sessions: make(map[string]*terminalSession),
+		prefix:   prefix,
 	}
 
-	router.HandleFunc("/terminal/{id}/ws", t.terminalWebsocket)
-	router.HandleFunc("/terminal/{id}/start-record", t.terminalStartRecord)
-	router.HandleFunc("/terminal/{id}/stop-record", t.terminalStopRecord)
-	router.HandleFunc("/terminal/{id}", t.terminalIndex)
+	assetFnc := func(w http.ResponseWriter, r *http.Request) {
+		asset(prefix, w, r)
+	}
+
+	router.PathPrefix(prefix + "/statics").HandlerFunc(assetFnc)
+	router.HandleFunc(prefix+"/terminal/{id}/ws", t.terminalWebsocket)
+	router.HandleFunc(prefix+"/terminal/{id}/start-record", t.terminalStartRecord)
+	router.HandleFunc(prefix+"/terminal/{id}/stop-record", t.terminalStopRecord)
+	router.HandleFunc(prefix+"/terminal/{id}", t.terminalIndex)
 
 	return t
 }

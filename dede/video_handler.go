@@ -87,13 +87,13 @@ func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func registerVideoHandler(router *mux.Router) *videoHanlder {
+func RegisterVideoHandler(prefix string, router *mux.Router) *videoHanlder {
 	t := &videoHanlder{
 		recorders: make(map[string]*videoRecorder),
 	}
 
-	router.HandleFunc("/video/start-record", t.startRecord)
-	router.HandleFunc("/video/stop-record", t.stopRecord)
+	router.HandleFunc(prefix+"/video/start-record", t.startRecord)
+	router.HandleFunc(prefix+"/video/stop-record", t.stopRecord)
 
 	return t
 }

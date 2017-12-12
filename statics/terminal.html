@@ -2,20 +2,20 @@
 <html>
   <head>
     <title>{{ .Title }}</title>
-    <link rel="stylesheet" href="/statics/css/vendor/xterm.css" />
-    <link rel="stylesheet" href="/statics/css/vendor/fullscreen.css" />
-    <link rel="stylesheet" href="/statics/css/vendor/bootstrap.min.css" />
-    <link rel="stylesheet" href="/statics/css/vendor/bootstrap-toggle.min.css" />
-    <link rel="stylesheet" href="/statics/css/terminal.css" />
+    <link rel="stylesheet" href="{{ .Prefix }}/statics/css/vendor/xterm.css" />
+    <link rel="stylesheet" href="{{ .Prefix }}/statics/css/vendor/fullscreen.css" />
+    <link rel="stylesheet" href="{{ .Prefix }}/statics/css/vendor/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ .Prefix }}/statics/css/vendor/bootstrap-toggle.min.css" />
+    <link rel="stylesheet" href="{{ .Prefix }}/statics/css/terminal.css" />
 
-    <script src="/statics/js/vendor/jquery.3.2.1.min.js"></script>
-    <script src="/statics/js/vendor/notify.0.4.2.min.js"></script>
-    <script src="/statics/js/vendor/xterm.js"></script>
-    <script src="/statics/js/vendor/fit.js"></script>
-    <script src="/statics/js/vendor/attach.js"></script>
-    <script src="/statics/js/vendor/fullscreen.js"></script>
-    <script src="/statics/js/vendor/bootstrap-toggle.2.2.2.min.js"></script>
-    <script src="/statics/js/terminal.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/jquery.3.2.1.min.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/notify.0.4.2.min.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/xterm.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/fit.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/attach.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/fullscreen.js"></script>
+    <script src="{{ .Prefix }}/statics/js/vendor/bootstrap-toggle.2.2.2.min.js"></script>
+    <script src="{{ .Prefix }}/statics/js/terminal.js"></script>
   </head>
   <body>
     <div class="container dede-terminal-container">
@@ -34,7 +34,9 @@
     <script>
       $("#dede-terminal").width({{ .Width }});
       $("#dede-terminal").height({{ .Height }});
-      DedeTerminal = new _DedeTerminal("{{ .ID }}", {{ .Cols }}, {{ .Rows }}, {{ .Delay }});
+
+      var endpoint = location.host + "{{ .Prefix }}";
+      DedeTerminal = new _DedeTerminal(endpoint, "{{ .ID }}", {{ .Cols }}, {{ .Rows }}, {{ .Delay }}, "{{ .InitCmd }}");
     </script>
   </body>
 </html>

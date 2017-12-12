@@ -23,52 +23,31 @@
 package dede
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"mime"
 	"net/http"
+	"path/filepath"
+	"strings"
 
-	"github.com/gorilla/mux"
-	"github.com/skydive-project/skydive/common"
+	"github.com/skydive-project/dede/statics"
 )
 
-type textHandler struct {
-}
+func asset(prefix string, w http.ResponseWriter, r *http.Request) {
+	upath := strings.TrimPrefix(r.URL.Path, prefix)
+	if strings.HasPrefix(upath, "/") {
+		upath = strings.TrimPrefix(upath, "/")
+	}
 
-func (v *textHandler) addText(w http.ResponseWriter, r *http.Request) {
-	tp, err := createPathFromForm(r, "text.json")
+	content, err := statics.Asset(upath)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		Log.Errorf("unable to find the asset: %s", upath)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	text := struct {
-		Type string
-		Text string
-	}{}
+	ext := filepath.Ext(upath)
+	ct := mime.TypeByExtension(ext)
 
-	if err = common.JSONDecode(r.Body, &text); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	data, err := json.MarshalIndent(text, "", "  ")
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if err := ioutil.WriteFile(tp, data, 0644); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	Log.Infof("Text recorded %s", tp)
+	w.Header().Set("Content-Type", ct+"; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-}
-
-func RegisterTextHandler(prefix string, router *mux.Router) *textHandler {
-	t := &textHandler{}
-
-	router.HandleFunc(prefix+"/text", t.addText)
-	return t
+	w.Write(content)
 }

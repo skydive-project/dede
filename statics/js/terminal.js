@@ -24,9 +24,10 @@ $('#dede-terminal-record').change(function() {
   DedeTerminal.toggleRecord();
 });
 
-_DedeTerminal = function(id, cols, rows, delay) {
+_DedeTerminal = function(endpoint, id, cols, rows, delay, initCmd) {
   var self = this;
 
+  this.endpoint = endpoint;
   this.id = id;
   this.cols = parseInt(cols) || 80;
   this.rows = parseInt(rows) || 40;
@@ -46,9 +47,18 @@ _DedeTerminal = function(id, cols, rows, delay) {
 
   var websocket;
   function wsConnect() {
-    websocket = new WebSocket("ws://" + location.host + "/terminal/" + id + "/ws?cols=" + cols);
+    var protocol = "ws://";
+    if (location.protocol === "https:") {
+      protocol = "wss://";
+    }
+
+    websocket = new WebSocket(protocol + endpoint + "/terminal/" + id + "/ws?cols=" + cols);
     websocket.onopen = function(evt) {
       term.attach(websocket);
+
+      if (initCmd) {
+        self.typeCmd(initCmd);
+      }
     };
     websocket.addEventListener('message', function(msg) {
       if (self.onMessageCallback) self.onMessageCallback(msg);
@@ -109,7 +119,7 @@ _DedeTerminal.prototype.typeCmdWait = function(str, regex, callback) {
 
 _DedeTerminal.prototype.startRecord = function(sessionID, chapterID, sectionID) {
   $.ajax({
-     url : '/terminal/' + this.id + '/start-record?sessionID=' + sessionID +
+     url : location.protocol + '//' + this.endpoint + '/terminal/' + this.id + '/start-record?sessionID=' + sessionID +
            "&chapterID=" + chapterID + "&sectionID=" + sectionID
   });
   this.recording = true;
@@ -117,7 +127,7 @@ _DedeTerminal.prototype.startRecord = function(sessionID, chapterID, sectionID) 
 
 _DedeTerminal.prototype.stopRecord = function() {
   $.ajax({
-     url : '/terminal/' + this.id + '/stop-record'
+     url : location.protocol + '//' + this.endpoint + '/terminal/' + this.id + '/stop-record'
   });
   this.recording = false;
 };

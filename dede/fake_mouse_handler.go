@@ -41,7 +41,7 @@ func (t *fakeMouseHandler) fakeMouseInstall(w http.ResponseWriter, r *http.Reque
 	w.Write(asset)
 }
 
-func registerFakeMouseHandler(router *mux.Router) *fakeMouseHandler {
+func RegisterFakeMouseHandler(prefix string, router *mux.Router) *fakeMouseHandler {
 	f := &fakeMouseHandler{}
 
 	router.HandleFunc("/fake-mouse/install", f.fakeMouseInstall)

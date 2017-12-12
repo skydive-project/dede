@@ -25,11 +25,9 @@ package dede
 import (
 	"fmt"
 	"html/template"
-	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -61,27 +59,6 @@ func idFromForm(r *http.Request, filename string) string {
 	return fmt.Sprintf("%s-%s-%s-%s", r.FormValue("sessionID"), r.FormValue("chapterID"), r.FormValue("sectionID"), filename)
 }
 
-func asset(w http.ResponseWriter, r *http.Request) {
-	upath := r.URL.Path
-	if strings.HasPrefix(upath, "/") {
-		upath = strings.TrimPrefix(upath, "/")
-	}
-
-	content, err := statics.Asset(upath)
-	if err != nil {
-		Log.Errorf("unable to find the asset: %s", upath)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	ext := filepath.Ext(upath)
-	ct := mime.TypeByExtension(ext)
-
-	w.Header().Set("Content-Type", ct+"; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(content)
-}
-
 func index(w http.ResponseWriter, r *http.Request) {
 	asset := statics.MustAsset("statics/index.html")
 
@@ -106,10 +83,15 @@ func InitServer(dd string, pp int) {
 
 	router = mux.NewRouter()
 	router.HandleFunc("/", index)
-	router.PathPrefix("/statics").HandlerFunc(asset)
 
-	registerTerminalHandler(router)
-	registerFakeMouseHandler(router)
-	registerVideoHandler(router)
-	registerTextHandler(router)
+	assetFnc := func(w http.ResponseWriter, r *http.Request) {
+		asset("", w, r)
+	}
+
+	router.PathPrefix("/statics").HandlerFunc(assetFnc)
+
+	RegisterTerminalHandler("", router)
+	RegisterFakeMouseHandler("", router)
+	RegisterVideoHandler("", router)
+	RegisterTextHandler("", router)
 }
