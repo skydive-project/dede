@@ -66,9 +66,12 @@ func (v *textHandler) addText(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func RegisterTextHandler(prefix string, router *mux.Router) *textHandler {
+func registerTextHandler(prefix string, router *mux.Router) error {
 	t := &textHandler{}
-
 	router.HandleFunc(prefix+"/text", t.addText)
-	return t
+	return nil
+}
+
+func init() {
+	addHandler("terminal", registerTextHandler)
 }
