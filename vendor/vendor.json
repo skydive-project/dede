@@ -41,14 +41,13 @@
 		{
 			"checksumSHA1": "Thg9sicXr23/02y0VqmmJoEZIzI=",
 			"path": "github.com/gorilla/context",
-			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
-			"revisionTime": "2016-08-17T18:46:32Z"
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
 		},
 		{
-			"checksumSHA1": "SlBaXnUbIK20KIvvpTGJ3VhytM4=",
+			"checksumSHA1": "ya+ovs/YS2tZ5rApIdnnYGYjsEg=",
 			"path": "github.com/gorilla/mux",
-			"revision": "ac112f7d75a0714af1bd86ab17749b31f7809640",
-			"revisionTime": "2017-07-03T15:07:09Z"
+			"revision": "5ab525f4fb1678e197ae59401e9050fa0b6cb5fd",
+			"revisionTime": "2017-12-08T16:08:15Z"
 		},
 		{
 			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
@@ -63,7 +62,7 @@
 			"revisionTime": "2015-10-23T09:11:02Z"
 		},
 		{
-			"checksumSHA1": "gGDSJToIqPYPEnKst2qLfuTeIZU=",
+			"checksumSHA1": "HVxIIhwG2vbG9Wv1tBeSGavtI6Q=",
 			"path": "github.com/kr/pty",
 			"revision": "2c10821df3c3cf905230d078702dfbe9404c9b23",
 			"revisionTime": "2017-03-07T14:53:09Z"

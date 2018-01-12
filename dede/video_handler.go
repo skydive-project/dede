@@ -29,12 +29,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type videoHanlder struct {
+type videoHandler struct {
 	sync.RWMutex
 	recorders map[string]*videoRecorder
 }
 
-func (v *videoHanlder) startRecord(w http.ResponseWriter, r *http.Request) {
+func (v *videoHandler) startRecord(w http.ResponseWriter, r *http.Request) {
 	vp, err := createPathFromForm(r, "video.mp4")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -67,7 +67,7 @@ func (v *videoHanlder) startRecord(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
+func (v *videoHandler) stopRecord(w http.ResponseWriter, r *http.Request) {
 	id := idFromForm(r, "video.mp4")
 
 	v.RLock()
@@ -87,13 +87,17 @@ func (v *videoHanlder) stopRecord(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func RegisterVideoHandler(prefix string, router *mux.Router) *videoHanlder {
-	t := &videoHanlder{
+func RegisterVideoHandler(prefix string, router *mux.Router) error {
+	t := &videoHandler{
 		recorders: make(map[string]*videoRecorder),
 	}
 
 	router.HandleFunc(prefix+"/video/start-record", t.startRecord)
 	router.HandleFunc(prefix+"/video/stop-record", t.stopRecord)
 
-	return t
+	return nil
+}
+
+func init() {
+	addHandler("video", RegisterVideoHandler)
 }

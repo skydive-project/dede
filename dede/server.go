@@ -35,12 +35,15 @@ import (
 	"github.com/skydive-project/dede/statics"
 )
 
-var (
-	Log = logging.MustGetLogger("default")
+type Handler func(prefix string, router *mux.Router) error
 
+var (
+	Log    = logging.MustGetLogger("default")
 	format = logging.MustStringFormatter(`%{color}%{time:15:04:05.000} ▶ %{level:.6s}%{color:reset} %{message}`)
-	router *mux.Router
-	lock   sync.RWMutex
+
+	router   *mux.Router
+	handlers map[string]Handler
+	lock     sync.RWMutex
 
 	dataDir = "/tmp"
 	port    int
@@ -75,6 +78,23 @@ func ListenAndServe() {
 	Log.Fatal(http.ListenAndServe(addr, router))
 }
 
+func addHandler(name string, handler Handler) {
+	handlers[name] = handler
+}
+
+func HasHandler(name string) bool {
+	_, found := handlers[name]
+	return found
+}
+
+func RegisterHandler(name, prefix string, router *mux.Router) error {
+	if handler, found := handlers[name]; found {
+		return handler(prefix, router)
+	} else {
+		return fmt.Errorf("unknown handler '%s'", name)
+	}
+}
+
 func InitServer(dd string, pp int) {
 	logging.SetFormatter(format)
 
@@ -90,8 +110,7 @@ func InitServer(dd string, pp int) {
 
 	router.PathPrefix("/statics").HandlerFunc(assetFnc)
 
-	RegisterTerminalHandler("", router)
-	RegisterFakeMouseHandler("", router)
-	RegisterVideoHandler("", router)
-	RegisterTextHandler("", router)
+	for name := range handlers {
+		RegisterHandler(name, "", router)
+	}
 }

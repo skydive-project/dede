@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
  * Copyright (C) 2017 Red Hat, Inc.
  *
@@ -41,13 +43,13 @@ type terminalSession struct {
 	recording bool
 }
 
-type terminalHanlder struct {
+type terminalHandler struct {
 	sync.RWMutex
 	prefix   string
 	sessions map[string]*terminalSession
 }
 
-func (t *terminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHandler) terminalStartRecord(w http.ResponseWriter, r *http.Request) {
 	tp, err := createPathFromForm(r, "history.json")
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -86,7 +88,7 @@ func (t *terminalHanlder) terminalStartRecord(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusOK)
 }
 
-func (t *terminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHandler) terminalStopRecord(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -124,7 +126,7 @@ func (t *terminalHanlder) terminalStopRecord(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHandler) terminalIndex(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -176,7 +178,7 @@ func (t *terminalHanlder) terminalIndex(w http.ResponseWriter, r *http.Request) 
 	t.Unlock()
 }
 
-func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Request) {
+func (t *terminalHandler) terminalWebsocket(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -261,8 +263,8 @@ func (t *terminalHanlder) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 	}()
 }
 
-func RegisterTerminalHandler(prefix string, router *mux.Router) *terminalHanlder {
-	t := &terminalHanlder{
+func registerTerminalHandler(prefix string, router *mux.Router) error {
+	t := &terminalHandler{
 		sessions: make(map[string]*terminalSession),
 		prefix:   prefix,
 	}
@@ -277,5 +279,9 @@ func RegisterTerminalHandler(prefix string, router *mux.Router) *terminalHanlder
 	router.HandleFunc(prefix+"/terminal/{id}/stop-record", t.terminalStopRecord)
 	router.HandleFunc(prefix+"/terminal/{id}", t.terminalIndex)
 
-	return t
+	return nil
+}
+
+func init() {
+	addHandler("terminal", registerTextHandler)
 }

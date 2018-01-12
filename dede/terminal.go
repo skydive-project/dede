@@ -1,3 +1,5 @@
+// +build !windows
+
 /*
  * Copyright (C) 2017 Red Hat, Inc.
  *
