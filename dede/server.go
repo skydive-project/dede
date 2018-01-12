@@ -38,12 +38,12 @@ import (
 type Handler func(prefix string, router *mux.Router) error
 
 var (
-	Log    = logging.MustGetLogger("default")
-	format = logging.MustStringFormatter(`%{color}%{time:15:04:05.000} ▶ %{level:.6s}%{color:reset} %{message}`)
+	Log      = logging.MustGetLogger("default")
+	format   = logging.MustStringFormatter(`%{color}%{time:15:04:05.000} ▶ %{level:.6s}%{color:reset} %{message}`)
+	handlers = make(map[string]Handler)
 
-	router   *mux.Router
-	handlers map[string]Handler
-	lock     sync.RWMutex
+	router *mux.Router
+	lock   sync.RWMutex
 
 	dataDir = "/tmp"
 	port    int
