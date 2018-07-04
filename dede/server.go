@@ -90,9 +90,8 @@ func HasHandler(name string) bool {
 func RegisterHandler(name, prefix string, router *mux.Router) error {
 	if handler, found := handlers[name]; found {
 		return handler(prefix, router)
-	} else {
-		return fmt.Errorf("unknown handler '%s'", name)
 	}
+	return fmt.Errorf("unknown handler '%s'", name)
 }
 
 func InitServer(dd string, pp int) {

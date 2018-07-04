@@ -73,5 +73,5 @@ func registerTextHandler(prefix string, router *mux.Router) error {
 }
 
 func init() {
-	addHandler("terminal", registerTextHandler)
+	addHandler("text", registerTextHandler)
 }
