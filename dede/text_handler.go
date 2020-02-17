@@ -28,7 +28,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/skydive-project/skydive/common"
 )
 
 type textHandler struct {
@@ -46,7 +45,8 @@ func (v *textHandler) addText(w http.ResponseWriter, r *http.Request) {
 		Text string
 	}{}
 
-	if err = common.JSONDecode(r.Body, &text); err != nil {
+	decoder := json.NewDecoder(r.Body)
+	if err = decoder.Decode(&text); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
