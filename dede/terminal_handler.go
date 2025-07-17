@@ -190,7 +190,7 @@ func (t *terminalHandler) terminalWebsocket(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	conn, _, _, err := ws.UpgradeHTTP(r, w, nil)
+	conn, _, _, err := ws.UpgradeHTTP(r, w)
 	if err != nil {
 		Log.Errorf("websocket upgrade error: %s", err)
 		return
